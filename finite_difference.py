@@ -60,7 +60,7 @@ for _ in range(N_iter):
     h[1:] = h[:-1] + dhdx[:-1]*dx[:-1]
     p[1:] = p[:-1] + dpdx[:-1]*dx[:-1]
     T = h/c_p
-    rho = density(x, T, p, R, liquid_density, 0.02) #p / (R * T)
+    rho = density(x, T, p, R, liquid_density, 0.01) #p / (R * T)
     u = m_dot/rho
     
     # Check conservation
@@ -95,6 +95,7 @@ a[3].set_ylabel("Density [kg/m^3]")
 for ax in a:
     ax.grid()
 
+plt.tight_layout()
 plt.show()
 
 
@@ -107,4 +108,5 @@ plt.ylabel('Normalized error')
 plt.xlabel('Iteration number')
 plt.legend()
 plt.grid()
+plt.tight_layout()
 plt.show()
