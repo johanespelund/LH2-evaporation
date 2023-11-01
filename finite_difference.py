@@ -14,8 +14,8 @@ kappa = 0.003           # [W/(m*K)]
 liquid_density = 100
 
 # Boundary conditions
-T_inlet = 280  # K, inlet temperature
-u_inlet = 0.1   # m/s, inlet velocity
+T_inlet = 250  # K, inlet temperature
+u_inlet = 0.05   # m/s, inlet velocity
 p_outlet = 101325  # Pa, outlet pressure
 
 # Inlet density from ideal gas law
@@ -58,7 +58,7 @@ for _ in range(N_iter):
     dhdx = (-np.gradient(Jq, x, edge_order=2) + Q_dot(T))/(m_dot)
     dpdx = -m_dot*dudx
     h[1:] = h[:-1] + dhdx[:-1]*dx[:-1]
-    p[1:] = p[:-1] + dpdx[:-1]*dx[:-1]
+    p[:-1] = p[1:] + dpdx[1:]*dx[1:]
     T = h/c_p
     rho = density(x, T, p, R, liquid_density, 0.01) #p / (R * T)
     u = m_dot/rho
