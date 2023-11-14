@@ -42,30 +42,35 @@ Lqw = -0.111
 water = thermo.water
 M = thermo.M
 
-liq = Phase(L_liq, -0, N, water.LIQPH, 
-            lambda T, p: thermo.calc_cp(T, p, water.LIQPH),
-            lambda T, p: thermo.calc_rho(T, p, water.LIQPH),
+liq = Phase(L_liq, -0, N, water.LIQPH,
+            lambda T, p: thermo.calc_cp(T, p, water.LIQPH, water),
+            lambda T, p: thermo.calc_rho(T, p, water.LIQPH, water),
             lambda T, p: thermo.calc_kappa(T, p, water.LIQPH))
 vap = Phase(0, L_gas, N, water.VAPPH,
-            lambda T, p: thermo.calc_cp(T, p, water.VAPPH),
-            lambda T, p: thermo.calc_rho(T, p, water.VAPPH),
+            lambda T, p: thermo.calc_cp(T, p, water.VAPPH, water),
+            lambda T, p: thermo.calc_rho(T, p, water.VAPPH, water),
             lambda T, p: thermo.calc_kappa(T, p, water.VAPPH))
+
 
 def dTdx(x, y, phase):
     # T[0] is temperature, T[1] is its gradient
     T, dTdx = y
     dudx = (mdot0 * phase.cp_func(T, vap.p) /
-            phase.kappa_func(T, liq.p)) * dTdx
+            phase.kappa(T, liq.p)) * dTdx
     return np.vstack((dTdx, dudx))
 
 # Boundary conditions
+
+
 def bc_gas(ya, yb, phase):
-    kappa_inlet = phase.kappa_func(Tgas, p0)
+    kappa_inlet = phase.kappa(Tgas, p0)
     return np.array([ya[0] - Tgas, -kappa_inlet*ya[1] - qgas])
 
+
 def bc_liq(ya, yb, phase):
-    kappa_inlet = phase.kappa_func(Tliq, p0)
+    kappa_inlet = phase.kappa(Tliq, p0)
     return np.array([yb[0] - Tliq, ya[0] - (Tliq + 2)])
+
 
 # Initial guess
 y0 = np.ones((2, N))*Tgas

@@ -17,14 +17,16 @@ class Phase:
         self.dx = np.gradient(self.x)
         self.T = np.ones(N)*T0
         self.p = np.ones(N)*p0
-        self.rho = np.ones(N)*rho0
+        self.calc_rho = np.ones(N)*rho0
         self.u = mdot0/rho0
         self.mdot = mdot0
         self.dudx = np.zeros(N)
 
-        self.cp_func = cp_func
-        self.rho_func = rho_func
-        self.kappa_func = kappa_func
+        self.calc_cp = cp_func
+        self.calc_rho = rho_func
+        self.calc_kappa = kappa_func
 
+    def set_mdot(self, mdot):
+        self.mdot = mdot
     # def cp(self, T, p):
     #     return self.cp_func(T, p)
