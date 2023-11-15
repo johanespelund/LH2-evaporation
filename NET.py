@@ -14,11 +14,12 @@ def calc_Lqq(*args):
     pass
 
 
-def deltaT_inv(q_l, mdot, rqq_sl, rqmu_sl):
-    return rqq_sl*q_l + rqmu_sl*mdot
+def deltaT_inv(q_g, J, rqq_sg, rqmu_sg):
+    return rqq_sg*q_g + rqmu_sg*J
 
-def p_by_psat(q_l, mdot, rmumu_sl, rqmu_sl, R):
-    return -(rqmu_sl*q_l + rmumu_sl*mdot)/R
+
+def p_by_psat(q_g, J, rmumu_sg, rqmu_sg):
+    return rqmu_sg*q_g + rmumu_sg*J
 
 def R_qq(C_eq, Tl, R, M):
     v_mp = np.sqrt((2*R*Tl)/M)     # m/s
