@@ -4,7 +4,7 @@ from scipy.integrate import odeint
 
 from density_func import density
 
-N = 50
+N = 25
 L = 1
 
 # Constants

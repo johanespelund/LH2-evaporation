@@ -3,6 +3,8 @@ from thermopack.saftvrqmie import saftvrqmie
 import numpy as np
 from collections.abc import Iterable
 
+R = 8.314
+
 water = cpa('H2O')
 H2 = saftvrqmie('H2')
 M_water = water.compmoleweight(1) * 1e-3  # [kg/mol]
@@ -16,7 +18,7 @@ def calc_cp(T, p, phase_flag, eos):
         return cp
     else:
         _, Cp_liq = eos.enthalpy(T, p, [1], phase_flag, dhdt=True)
-        return Cp_liq/M_waterjk
+        return Cp_liq/M_water
 
 
 def calc_rho(T, p, phase_flag, eos):

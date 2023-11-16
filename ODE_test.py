@@ -120,7 +120,6 @@ if solution.success:
     for i in range(T.size):
         T[i] = h_to_T(solution.y[0][i], p0)
     plt.plot(T - 273.15, solution.t, label='Temperature')
-
 plt.xlim((-10, 22))
 plt.ylim((-10e-3, 35e-3))
 plt.show()
