@@ -12,9 +12,9 @@ M_H2 = H2.compmoleweight(1) * 1e-3  # [kg/mol]
 
 
 def calc_cp(T, p, phase_flag, eos):
-    if isinstance(T, Iterable) and isinstance(p, Iterable):
-        cp = np.array([calc_cp(T_val, p_val, phase_flag, eos)
-                      for T_val, p_val in zip(T, p)])
+    if isinstance(T, Iterable):
+        cp = np.array([calc_cp(T_val, p, phase_flag, eos)
+                      for T_val in T])
         return cp
     else:
         _, Cp_liq = eos.enthalpy(T, p, [1], phase_flag, dhdt=True)
@@ -22,9 +22,9 @@ def calc_cp(T, p, phase_flag, eos):
 
 
 def calc_rho(T, p, phase_flag, eos):
-    if isinstance(T, Iterable) and isinstance(p, Iterable):
-        rho = np.array([calc_rho(T_val, p_val, phase_flag, eos)
-                       for T_val, p_val in zip(T, p)])
+    if isinstance(T, Iterable):
+        rho = np.array([calc_rho(T_val, p, phase_flag, eos)
+                       for T_val in T])
         return rho
     else:
         specific_volume, = eos.specific_volume(
@@ -35,9 +35,9 @@ def calc_rho(T, p, phase_flag, eos):
 def calc_kappa(T, p, phase_flag):
     kappa_vap = 0.017
     kappa_liq = 0.57
-    if isinstance(T, Iterable) and isinstance(p, Iterable):
-        kappa = np.array([calc_kappa(T_val, p_val, phase_flag)
-                         for T_val, p_val in zip(T, p)])
+    if isinstance(T, Iterable):
+        kappa = np.array([calc_kappa(T_val, p, phase_flag)
+                         for T_val in T])
         return kappa
     return kappa_vap if (phase_flag == water.VAPPH) else kappa_liq
 

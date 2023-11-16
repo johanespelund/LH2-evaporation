@@ -16,7 +16,7 @@ class Phase:
         self.x = np.linspace(x_min, x_max, N)
         self.dx = np.gradient(self.x)
         self.T = np.ones(N)*T0
-        self.p = np.ones(N)*p0
+        self.p = p0
         self.calc_rho = np.ones(N)*rho0
         self.u = mdot0/rho0
         self.mdot = mdot0
