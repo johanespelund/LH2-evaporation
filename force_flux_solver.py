@@ -7,9 +7,6 @@ from scipy.optimize import fsolve
 
 R = thermo.R
 
-plt.style.use(["science", "nature"])
-fig, axes = plt.subplots(1, 2, figsize=(5, 2.5))
-a = axes.flatten()
 
 
 def solve_force_flux(Tliq, qvap, delta_p, eos):
@@ -38,6 +35,9 @@ def solve_force_flux(Tliq, qvap, delta_p, eos):
     return mdot, Tv
 
 if __name__ == "__main__":
+    plt.style.use(["science", "nature"])
+    fig, axes = plt.subplots(1, 2, figsize=(5, 2.5))
+    a = axes.flatten()
     eos = thermo.water
 
     Tliq = 273 + 1.2

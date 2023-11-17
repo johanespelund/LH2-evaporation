@@ -90,7 +90,7 @@ for i in range(N_outer_iter):
                 phase.calc_kappa(T, phase.p)) * dTdx
         return np.vstack((dTdx, d2Tdx2))
 
-    print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
+    # print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
     # Initial guess
     y0 = np.ones((2, N))*Tliq
 
@@ -102,10 +102,13 @@ for i in range(N_outer_iter):
                         lambda x, y: bc_liq(x, y, liq), liq.x, y0)
     liq.T = sol_liq.y[0]
     Tliq = liq.T[-1]
-    print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
+    
+
+
+    # print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
 
     mdot, Tgas = solve_force_flux(Tliq, qgas, dp, water)
-    print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
+    # print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
 
     liq.set_mdot(mdot)
     vap.set_mdot(mdot)
@@ -113,7 +116,7 @@ for i in range(N_outer_iter):
     dH_vap = thermo.calc_dHvap(Tliq, Tgas, p0, water)
     qliq = qgas + mdot*dH_vap
 
-    print(f"Updated interface values of gas: {Tgas=}, {qgas=}")
+    # print(f"Updated interface values of gas: {Tgas=}, {qgas=}")
 
     def bc_gas(ya, yb, phase: Phase):
         kappa_inlet = phase.calc_kappa(Tgas, phase.p)
@@ -130,17 +133,13 @@ for i in range(N_outer_iter):
     # psat = thermo.calc_p_sat(Tliq, water)
     # print(f"{psat=}, {p0=}")
 
-    # mdot = NET.mass_flux_NET(Tgas, Tliq, p0, psat, 8.314, thermo.M, Lww, Lqw)
-    # qgas = NET.heat_flux_gas_NET(Tgas, Tliq, p0, psat, 8.314, thermo.M, Lqq, Lqw)
-    # qliq = qgas + mdot*dH_vap
-
-    print(f"Updated interface values again: {mdot=}, {qliq=}, {qgas=}")
 
     # Check if the solver converged
-    # if sol_liq.status == 0 and sol_gas.status == 0:
-    #     print('Success: The solver converged.')
-    # else:
-    #     print('WARNING: The solver did not converge.')
+    if sol_liq.status == 0 and sol_gas.status == 0:
+        print('Success: The solver converged.')
+    else:
+        print('WARNING: The solver did not converge.')
+    print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
 
 
 plt.plot(vap.T - 273.15, vap.x * 1000, label=f"p = {vap.p: .2f} Pa")  # Convert x to mm
