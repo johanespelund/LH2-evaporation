@@ -23,7 +23,7 @@ def solve_force_flux(Tliq, qvap, delta_p, eos):
 
         r_qq = NET.R_qq(C_eq, Tv, R, M)*1e2
         r_qmu = NET.R_qmu(C_eq, Tv, R, M)*1e3
-        r_mumu = NET.R_mumu(C_eq, Tv, R, M)*1e5
+        r_mumu = NET.R_mumu(C_eq, Tv, R, M)*5e4
 
         r1 = (1/Tv) - (1/Tliq) - NET.deltaT_inv(qvap, J, r_qq, r_qmu)
         r2 = -R*np.log(p/p_sat) - NET.p_by_psat(qvap, J, r_mumu, r_qmu)
