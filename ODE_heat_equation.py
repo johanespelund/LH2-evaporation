@@ -25,7 +25,6 @@ L_gas = 10e-3  # Length of the domain
 L_liq = -5e-3
 N = 50
 mdot0 = 3.78e-4  # Mass flow rate
-# mdot0_HKS = mass_flux_HKS(sigma_condensation(Tliq, T0, 3), Tliq, T0, p0, p0, M)
 # mdot = mdot_HKS
 qgas = -10.59  # Heat flux
 qliq = 433.2  # Heat flux\
@@ -48,11 +47,11 @@ M = thermo.M_water
 liq = Phase(L_liq, -0, N, water.LIQPH,
             lambda T, p: thermo.calc_cp(T, p, water.LIQPH, water),
             lambda T, p: thermo.calc_rho(T, p, water.LIQPH, water),
-            lambda T, p: thermo.calc_kappa(T, p, water.LIQPH))
+            lambda T, p, x: thermo.calc_kappa(T, p, water.LIQPH, x))
 vap = Phase(0, L_gas, N, water.VAPPH,
             lambda T, p: thermo.calc_cp(T, p, water.VAPPH, water),
             lambda T, p: thermo.calc_rho(T, p, water.VAPPH, water),
-            lambda T, p: thermo.calc_kappa(T, p, water.VAPPH))
+            lambda T, p, x: thermo.calc_kappa(T, p, water.VAPPH, x))
 
 liq.set_mdot(0)
 vap.set_mdot(0)
@@ -62,20 +61,10 @@ vap.set_mdot(0)
 
 
 mdot = 1e-4
+print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
 N_outer_iter = 10
 for i in range(N_outer_iter):
 
-    """
-    Fix T_inf at bottom of liquid. The use initial guess for mdot and qliq
-    to find Tliq (just below surface). 
-
-    Use NET to calulate Tg (just above surface), using qliq and mdot.
-    qvap is given by energy balance. Solve heat equation in gas phase.
-
-    Use conductivity formulation of NET to update heat flux of gas and mass flux.
-    Update qliq using current temperature jump, and start over.
-
-    """
     dp = -1.8
     p_sat = thermo.calc_p_sat(Tliq, water)
     p0 = p_sat + 1.8
@@ -86,8 +75,16 @@ for i in range(N_outer_iter):
     def dTdx(x, y, phase: Phase):
         # T[0] is temperature, T[1] is its gradient
         T, dTdx = y
-        d2Tdx2 = (phase.mdot * phase.calc_cp(T, phase.p) /
-                phase.calc_kappa(T, phase.p)) * dTdx
+        kappa = phase.calc_kappa(T, phase.p, x)#*(1 + 100*((x > -2.5e-3) & (x<0)))
+        dkdx = np.gradient(kappa, x)
+        # d2Tdx2 = dTdx*(phase.mdot * phase.calc_cp(T, phase.p) /
+        #          (kappa))
+        d2Tdx2 = ((phase.mdot * phase.calc_cp(T, phase.p) - 1*dkdx)*
+                 (dTdx/kappa))
+        # d2Tdx2 = ((phase.mdot * phase.calc_cp(T, phase.p) - 0*dkdx)*
+        #          (1/kappa))
+        # print(kappa)
+        # input()
         return np.vstack((dTdx, d2Tdx2))
 
     # print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
@@ -95,12 +92,13 @@ for i in range(N_outer_iter):
     y0 = np.ones((2, N))*Tliq
 
     def bc_liq(ya, yb, phase: Phase):
-        kappa_inlet = phase.calc_kappa(Tliq, p0)
+        kappa_inlet = phase.calc_kappa(Tliq, p0, 0)
         return np.array([ya[0] - T_inf, yb[1] + kappa_inlet*qliq])
 
     sol_liq = solve_bvp(lambda x, y: dTdx(x, y, liq),
                         lambda x, y: bc_liq(x, y, liq), liq.x, y0)
     liq.T = sol_liq.y[0]
+    # liq.x = sol_liq.x
     Tliq = liq.T[-1]
     
 
@@ -119,7 +117,7 @@ for i in range(N_outer_iter):
     # print(f"Updated interface values of gas: {Tgas=}, {qgas=}")
 
     def bc_gas(ya, yb, phase: Phase):
-        kappa_inlet = phase.calc_kappa(Tgas, phase.p)
+        kappa_inlet = phase.calc_kappa(Tgas, phase.p, 0)
         return np.array([ya[0] - Tgas, kappa_inlet*ya[1] + qgas])
 
 
@@ -127,6 +125,7 @@ for i in range(N_outer_iter):
     sol_gas = solve_bvp(lambda x, y: dTdx(x, y, vap),
                         lambda x, y: bc_gas(x, y, vap), vap.x, y0)
     vap.T = sol_gas.y[0]
+    # vap.x = sol_gas.x
     # vap.rho = vap.calc_rho(vap.T, vap.p)
     # vap.u = (vap.mdot/vap.rho)
     # vap.p[1:] = (vap.p - vap.dx*vap.rho*np.gradient(vap.u, vap.x))[:-1]
@@ -135,12 +134,13 @@ for i in range(N_outer_iter):
 
 
     # Check if the solver converged
-    if sol_liq.status == 0 and sol_gas.status == 0:
-        print('Success: The solver converged.')
-    else:
+    if sol_liq.status != 0 or sol_gas.status != 0:
         print('WARNING: The solver did not converge.')
+
     print(f"{mdot=}, {qliq=}, {qgas=}, {Tliq=}, {Tgas=}")
 
+liq.x = sol_liq.x
+vap.x = sol_gas.x
 
 plt.plot(vap.T - 273.15, vap.x * 1000, label=f"p = {vap.p: .2f} Pa")  # Convert x to mm
 plt.plot(liq.T - 273.15, liq.x * 1000, 'C3')  # Convert x to mm
