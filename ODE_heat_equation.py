@@ -1,6 +1,7 @@
 from scipy.optimize import fsolve
 from force_flux_solver import solve_force_flux
 from data_jafari import jafari_913Pa_40heat
+import data_badam as badam
 import NET
 import thermo
 from KGT import mass_flux_HKS, sigma_condensation
@@ -20,13 +21,13 @@ Tgas = 273.15 + 6.1  # Temperature at x=0
 Tliq = 273.15 + 5.7
 p0 = thermo.calc_p_sat(Tliq, thermo.water)  # Initial pressure
 TL = 273.15 + 40  # Temperature at x=L, assuming 60C for example
-T_inf = Tliq + 2.5  # Superheat of bulk liquid, at L_liq
-L_gas = 10e-3  # Length of the domain
-L_liq = -5e-3
+T_inf = 273.15 + badam.T[0]  # Superheat of bulk liquid, at L_liq
+L_gas = 3e-3  # Length of the domain
+L_liq = badam.x[0]*1e-3
 N = 50
 mdot0 = 3.78e-4  # Mass flow rate
 # mdot = mdot_HKS
-qgas = -10.59  # Heat flux
+qgas = -88.56  # Heat flux
 qliq = 433.2  # Heat flux\
 
 Lqq = 0.236e-4
@@ -142,13 +143,13 @@ for i in range(N_outer_iter):
 liq.x = sol_liq.x
 vap.x = sol_gas.x
 
-plt.plot(vap.T - 273.15, vap.x * 1000, label=f"p = {vap.p: .2f} Pa")  # Convert x to mm
+plt.plot(vap.T - 273.15, vap.x * 1000, label=f"NET")  # Convert x to mm
 plt.plot(liq.T - 273.15, liq.x * 1000, 'C3')  # Convert x to mm
-plt.plot(jafari_913Pa_40heat[:, 0], jafari_913Pa_40heat[:, 1],
-         marker='>', lw=0, color='C2', label="Jafari et al. (913 Pa)")
-
-plt.fill_between(np.linspace(5, 15), 0, L_liq*1000, alpha=0.5)
-plt.xlabel('Temperature (deg. C)')
+# plt.plot(jafari_913Pa_40heat[:, 0], jafari_913Pa_40heat[:, 1],
+#          marker='>', lw=0, color='C2', label="Jafari et al. (913 Pa)")
+plt.plot(badam.T, badam.x, 'C2o', label="Badam et al. (2007)")
+plt.fill_between(np.linspace(-2, 25), 0, L_liq*1000, alpha=0.5)
+plt.xlabel(r'T [$^\circ$C]')
 plt.ylabel('x [mm]')
 plt.grid()
 plt.legend()

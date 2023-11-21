@@ -31,7 +31,7 @@ def R_qmu(C_eq, Tl, R, M):
 
 def R_mumu(C_eq, Tl, R, M):
     v_mp = np.sqrt((2*R*Tl)/M)     # m/s
-    return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((0.5)**(-1) + np.pi**(-1) - 23/32)
+    return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((0.8)**(-1) + np.pi**(-1) - 23/32)
 
 
 if __name__ == "__main__":

@@ -21,9 +21,9 @@ def solve_force_flux(Tliq, qvap, delta_p, eos):
         p_sat = thermo.calc_p_sat(Tliq, eos)
         C_eq = thermo.calc_Ceq(Tv, eos)
 
-        r_qq = NET.R_qq(C_eq, Tv, R, M)*1e2
-        r_qmu = NET.R_qmu(C_eq, Tv, R, M)*1e3
-        r_mumu = NET.R_mumu(C_eq, Tv, R, M)*5e4
+        r_qq = NET.R_qq(C_eq, Tv, R, M)*2e1
+        r_qmu = NET.R_qmu(C_eq, Tv, R, M)*2e1
+        r_mumu = NET.R_mumu(C_eq, Tv, R, M)*2e4
 
         r1 = (1/Tv) - (1/Tliq) - NET.deltaT_inv(qvap, J, r_qq, r_qmu)
         r2 = -R*np.log(p/p_sat) - NET.p_by_psat(qvap, J, r_mumu, r_qmu)
@@ -40,11 +40,11 @@ if __name__ == "__main__":
     a = axes.flatten()
     eos = thermo.water
 
-    Tliq = 273 + 1.2
+    Tliq = 273 - 1.10
     print(thermo.calc_p_sat(Tliq, eos))
-    qvap = -100.36
+    qvap = -88.56
     delta_p = np.linspace(-2, 0)
-    for qvap in [0, -0.1, -1, -10]:
+    for qvap in [0, qvap/100, qvap/10, qvap]:
         mdot, Tvap = np.zeros(delta_p.size), np.zeros(delta_p.size)
         for i in range(delta_p.size):
             dp = delta_p[i]
