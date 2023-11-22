@@ -31,14 +31,16 @@ def R_qmu(C_eq, Tl, R, M):
 
 def R_mumu(C_eq, Tl, R, M):
     v_mp = np.sqrt((2*R*Tl)/M)     # m/s
-    return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((0.8)**(-1) + np.pi**(-1) - 23/32)
+    return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((0.9)**(-1) + np.pi**(-1) - 23/32)
 
 
 if __name__ == "__main__":
     from thermo import calc_p_sat, water, M_water, calc_Ceq
     import matplotlib.pyplot as plt
+    import scienceplots
+    plt.style.use(["science", "nature"])
     R = 8.314
-    Tl = np.linspace(230, 300)
+    Tl = np.linspace(273, 300)
     psat = calc_p_sat(Tl, water)
     # vg, = water.specific_volume(
     #     Tl, psat, [1], water.VAPPH)
@@ -49,15 +51,22 @@ if __name__ == "__main__":
     rmuq = R_qmu(C_eq, Tl, R, M_water)
     rmumu = R_mumu(C_eq, Tl, R, M_water)
 
-    fig, axes = plt.subplots(2, 2)
+    fig, axes = plt.subplots(1, 3)
     a = axes.flatten()
-    a[0].plot(Tl, psat)
-    a[1].plot(Tl, rqq)
-    a[2].plot(Tl, rmuq)
-    a[3].plot(Tl, rmumu)
+    # a[0].plot(Tl, psat)
+    a[0].plot(Tl, rqq)
+    a[0].set_ylabel("$R_{qq}^{s,g}$ [m$^2$s/(J$\cdot$K)]")
+    a[1].plot(Tl, rmuq)
+    a[1].set_ylabel("$R_{q\mu}^{s,g}$ [m$^2$s/(mol$\cdot$K)]")
+    a[2].plot(Tl, rmumu)
+    a[2].set_ylabel("$R_{\mu\mu}^{s,g}$ [m$^2$s/(mol$^2\cdot$K)]")
 
+    
+    for ax in a:
+        ax.grid()
+        ax.set_xlabel("T [K]")
+    plt.tight_layout()
     plt.show()
-
     print(f"{rqq=}")
     print(f"{rmuq=}")
     print(f"{rmumu=}")

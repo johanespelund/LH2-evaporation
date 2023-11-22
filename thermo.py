@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 R = 8.314
 
-water = cpa('H2O')
+water = cpa('H2O', 'srk')
 H2 = saftvrqmie('H2')
 M_water = water.compmoleweight(1) * 1e-3  # [kg/mol]
 M_H2 = H2.compmoleweight(1) * 1e-3  # [kg/mol]
@@ -37,8 +37,9 @@ def calc_kappa(T, p, phase_flag, x):
     if isinstance(T, Iterable):
         kappa = np.array([calc_kappa(T_val, p, phase_flag, x_val) for T_val, x_val in zip(T, x)])
         return kappa
-
-    kappa = kappa_vap*(1 + 400*x) if phase_flag == water.VAPPH else kappa_liq
+    
+    kappa = kappa_vap if phase_flag == water.VAPPH else kappa_liq
+    # kappa = kappa_vap*(1 + 400*x) if phase_flag == water.VAPPH else kappa_liq
     # if x <= -2.5e-3 and x >= -5e-3 and phase_flag == water.LIQPH:
     #     kappa *= (1 + (-x - 2.5e-3)**2*800000) #transition_factor
     #     return kappa
@@ -85,9 +86,9 @@ if __name__ == "__main__":
     import numpy as np
     from thermo import water
 
-    x = np.linspace(-5e-3, 0, 50)
+    x = np.linspace(0, 3e-3, 50)
     T = np.linspace(273, 272, 50)
-    kappa = calc_kappa(T, 1e5, water.LIQPH, x)
+    kappa = calc_kappa(T, 1e5, water.VAPPH, x)
     plt.plot(kappa, x)
     plt.show()
 
