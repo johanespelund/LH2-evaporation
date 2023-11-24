@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
-from density_func import density
+from _attic.density_func import density
 
 N = 25
 L = 1

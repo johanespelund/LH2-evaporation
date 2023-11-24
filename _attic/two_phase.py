@@ -5,7 +5,7 @@ from thermopack.cubic import cubic
 from thermopack.cpa import cpa
 from thermopack import thermo
 
-from density_func import density
+from _attic.density_func import density
 from dataclasses import dataclass
 
 water = cpa('H2O', 'SRK')

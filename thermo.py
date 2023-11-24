@@ -7,8 +7,12 @@ R = 8.314
 
 water = cpa('H2O', 'srk')
 H2 = saftvrqmie('H2')
+
 M_water = water.compmoleweight(1) * 1e-3  # [kg/mol]
 M_H2 = H2.compmoleweight(1) * 1e-3  # [kg/mol]
+
+DOF_water = 3
+DOF_H2 = 5
 
 
 def calc_cp(T, p, phase_flag, eos):
@@ -94,83 +98,3 @@ if __name__ == "__main__":
 
     print(calc_p_sat(298, water))
     print(calc_T_sat(101325, water))
-
-# import CoolProp.CoolProp as CP
-# import numpy as np
-# from collections.abc import Iterable
-
-# # Constants
-# R = 8.314
-
-# # Function to calculate specific heat capacity
-# def calc_cp(T, p, fluid):
-#     if isinstance(T, Iterable):
-#         cp = np.array([calc_cp(T_val, p, fluid) for T_val in T])
-#         return cp
-#     else:
-#         return CP.PropsSI('Cpmass', 'T', T, 'P', p, fluid)
-
-
-# # Function to calculate density
-# def calc_rho(T, p, fluid):
-#     if isinstance(T, Iterable):
-#         rho = np.array([calc_rho(T_val, p, fluid) for T_val in T])
-#         return rho
-#     else:
-#         return CP.PropsSI('Dmass', 'T', T, 'P', p, fluid)
-
-
-# # Function to calculate thermal conductivity
-# def calc_kappa(T, p, fluid):
-#     if isinstance(T, Iterable):
-#         kappa = np.array([calc_kappa(T_val, p, fluid) for T_val in T])
-#         return kappa
-#     else:
-#         return CP.PropsSI('conductivity', 'T', T, 'P', p, fluid)
-
-
-# # Function to calculate enthalpy of vaporization
-# def calc_dHvap(T, p, fluid):
-#     h_g = CP.PropsSI('Hmass', 'T', T, 'P', p, 'Q', 1, fluid)  # Vapor
-#     h_l = CP.PropsSI('Hmass', 'T', T, 'P', p, 'Q', 0, fluid)  # Liquid
-#     return h_g - h_l
-
-
-# # Function to calculate saturation pressure
-# def calc_p_sat(T, fluid):
-#     if isinstance(T, Iterable):
-#         p_sat = np.array([calc_p_sat(T_val, fluid) for T_val in T])
-#         return p_sat
-#     else:
-#         return CP.PropsSI('P', 'T', T, 'Q', 0, fluid)
-
-
-# # Function to calculate saturation temperature
-# def calc_T_sat(p, fluid):
-#     return CP.PropsSI('T', 'P', p, 'Q', 0, fluid)
-
-
-# # Function to calculate equilibrium concentration
-# def calc_Ceq(T, fluid):
-#     if isinstance(T, Iterable):
-#         C_eq = np.array([calc_Ceq(T_val, fluid) for T_val in T])
-#         return C_eq
-#     else:
-#         psat = calc_p_sat(T, fluid)
-#         v_g = CP.PropsSI('V', 'T', T, 'Q', 1, fluid)  # Q = 1 for vapor phase
-#         return 1 / v_g
-
-
-
-# if __name__ == "__main__":
-#     import matplotlib.pyplot as plt
-#     import numpy as np
-
-#     x = np.linspace(-5e-3, 0, 50)
-#     T = np.linspace(273.25, 450, 50)
-#     kappa = calc_rho(T, 1e5, "Water")
-#     plt.plot(T, kappa)
-#     plt.show()
-
-#     print(calc_p_sat(280, "Water"))
-#     print(calc_T_sat(1e5, "Water"))

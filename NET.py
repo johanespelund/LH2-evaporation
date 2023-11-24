@@ -1,59 +1,54 @@
 import numpy as np
 
-def mass_flux_NET(T_g, T_l, p_g, p_sat, R, M, Lww, Lwq):
-    P1 = -Lww*(R*T_l/M)*np.log(p_g/p_sat)
-    P2 = -Lwq*(T_g - T_l)/T_g
-    return P1 + P2
+#################################################################
+#                                                               #
+#               Linear fits from Rauter et al.                  #
+#           Only valid for water at low pressures!              #
+#                                                               #
+def r_qq(Tliq):                                                 #
+    return -1.5636e-8*Tliq + 4.6189e-6                          #
+#                                                               #
+def r_qmu(Tliq):                                                #
+    return -0.0026*Tliq + 0.7415                                #
+#                                                               #
+def r_mumu(Tliq):                                               #
+    return -2.7399e-3*Tliq + 8.0423e5                           #
+#                                                               #
+#                                                               #
+#################################################################
 
-def heat_flux_gas_NET(T_g, T_l, p_g, p_sat, R, M, Lqq, Lwq):
-    P1 = -Lwq*(R*T_l/M)*np.log(p_g/p_sat)
-    P2 = -Lqq*(T_g - T_l)/T_g
-    return P1 + P2
 
-def calc_Lqq(*args):
-    pass
+def forces(q_g, J, rqq, rmumu, rqmu):
+    """
+    Force-flux equations for steady evaporation in NET, single component
+    See Eq. (11.14) in Non-Equilibrium Thermodynamics of Heterogeneous Systems
+    by Kjelstrup and Bedeaux, 2. edition.
 
+    Args:
+        q_g (float): heat flux on gas side of interface    [W/m^2]
+        J (float): molar flux across interface             [mol/(m^2 s)]
+        rqq (float):   Heat resistance coeff               [m^2 s / (J K)]
+        rmumu (float): Mass resistance coeff               [J m^2 s / (mol^2 K)]
+        rqmu (float):  Coupling coeff                      [m^2 s / (mol K)]
 
-def deltaT_inv(q_g, J, rqq_sg, rqmu_sg):
-    return rqq_sg*q_g + rqmu_sg*J
-
-
-def p_by_psat(q_g, J, rmumu_sg, rqmu_sg):
-    return rqmu_sg*q_g + rmumu_sg*J
-
-def R_qq(C_eq, Tl, R, M):
-    v_mp = np.sqrt((2*R*Tl)/M)     # m/s
-    return ((np.sqrt(np.pi))/(4 * C_eq* R * Tl**2 * v_mp))*(1 + 104/(25*np.pi))
-
-def R_qmu(C_eq, Tl, R, M):
-    v_mp = np.sqrt((2*R*Tl)/M)     # m/s
-    return ((np.sqrt(np.pi))/(8 * (C_eq) * Tl * v_mp))*(1 + 16/(5*np.pi))
-
-def R_mumu(C_eq, Tl, R, M):
-    v_mp = np.sqrt((2*R*Tl)/M)     # m/s
-    return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((0.9)**(-1) + np.pi**(-1) - 23/32)
+    Returns: Resulting forces
+        (float, float): (1/T_g - 1/T_l), -R*ln(p/p_sat)    [1/K], [J/(mol K)]
+    """
+    return rqq*q_g + rqmu*J, rqmu*q_g + rmumu*J
 
 
 if __name__ == "__main__":
-    from thermo import calc_p_sat, water, M_water, calc_Ceq
     import matplotlib.pyplot as plt
     import scienceplots
     plt.style.use(["science", "nature"])
-    R = 8.314
     Tl = np.linspace(273, 300)
-    psat = calc_p_sat(Tl, water)
-    # vg, = water.specific_volume(
-    #     Tl, psat, [1], water.VAPPH)
-    C_eq = calc_Ceq(Tl, water) 
-    # print(C_eq)
-    # print(psat*1e-5)
-    rqq = R_qq(C_eq, Tl, R, M_water)
-    rmuq = R_qmu(C_eq, Tl, R, M_water)
-    rmumu = R_mumu(C_eq, Tl, R, M_water)
+    
+    rqq = r_qq(Tl)
+    rmuq = r_qmu(Tl)
+    rmumu = r_mumu(Tl)
 
     fig, axes = plt.subplots(1, 3)
     a = axes.flatten()
-    # a[0].plot(Tl, psat)
     a[0].plot(Tl, rqq)
     a[0].set_ylabel("$R_{qq}^{s,g}$ [m$^2$s/(J$\cdot$K)]")
     a[1].plot(Tl, rmuq)
