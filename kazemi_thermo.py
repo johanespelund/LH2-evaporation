@@ -20,15 +20,16 @@ def sigma_liquid(T):
     return 1e-3 * (71.18 - 0.1435 * T + 16.88 * T**2)
 
 def kappa_liquid(T):
-    # return 0.58*T/T#
-    return ((T/228) - 1)**0.18 #
+    return 0.568*T/T#
+    # return ((T/228) - 1)**0.18 #
 
-# def psat_liquid(T):
-#     """Saturation pressure (Pa) as a function of temperature (K)"""
-#     return 611.2 * np.exp(1045.85115 - 21394.66626 / T + 1.09697 * T - 1.300374 * 10**(-3) * T**2 +
-#                           7.747299 * 10**(-7) * T**3 - 2.1649 * 10**(-12) * T**4 - 211.3896 * np.log(T))
-    
-    
+def psat_liquid(T):
+    """Saturation pressure (Pa) as a function of temperature (K)"""
+    return 611.2 * np.exp(1045.85115 - 21394.66626 / T + 1.09697 * T - 1.300374 * 10**(-3) * T**2 +
+                          7.747299 * 10**(-7) * T**3 - 2.1649 * 10**(-12) * T**4 - 211.3896 * np.log(T))
+
+print(222222222222, psat_liquid(273.15 - 1.61))    
+
 def dH_vap(T):
     psat = psat_liquid(T)
     psat_0 = psat_liquid(T - 0.0005)

@@ -7,12 +7,15 @@ R = 8.314
 
 water = cpa('H2O', 'srk')
 H2 = saftvrqmie('H2')
+N2 = saftvrqmie('N2')
 
 M_water = water.compmoleweight(1) * 1e-3  # [kg/mol]
 M_H2 = H2.compmoleweight(1) * 1e-3  # [kg/mol]
+M_N2 = N2.compmoleweight(1) * 1e-3  # [kg/mol]
 
 DOF_water = 3
 DOF_H2 = 5
+DOF_N2 = 5
 
 
 def calc_cp(T, p, phase_flag, eos):

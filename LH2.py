@@ -32,45 +32,46 @@ N = 50
 # DOF = thermo.DOF_H2
 
 
-Tgas = 273.15 + data.T_gas[0]
-Tliq = 273.15 + data.T_liq[0]
-p0 = 545
-T_inf = 273.15 + data.T_liq[-1]   # Superheat of bulk liquid, at L_liq
+Tgas = 22.3 #+ data.T_gas[0]
+Tliq = 22.3 #+ data.T_liq[0]
+p0 = 1e5
+T_inf = 23 # + data.T_liq[-1]   # Superheat of bulk liquid, at L_liq
 L_gas = data.x_gas[-1]*1e-3       # Length of the domain
 L_liq = data.x_liq[-1]*1e-3        # Liquid temperature just below interface
 
-mdot = data.mdot  # Mass flow rate (guess)
+mdot = 1e-5 #data.mdot  # Mass flow rate (guess)
 qgas = -10.36  # Heat flux (from experiment)
-dTdx_gas = 1e3*np.gradient(data.T_gas, data.x_gas)[0]
-qgas = -k_thermo.kappa_vapor(Tgas)*dTdx_gas
-dTdx_liq = 1e3*np.gradient(data.T_liq, data.x_liq)[0]
-qliq = -k_thermo.kappa_liquid(Tliq)*dTdx_liq
+# dTdx_gas = 1e3*np.gradient(data.T_gas, data.x_gas)[0]
+# qgas = -k_thermo.kappa_vapor(Tgas)*dTdx_gas
+# dTdx_liq = 1e3*np.gradient(data.T_liq, data.x_liq)[0]
+# qliq = -k_thermo.kappa_liquid(Tliq)*dTdx_liq
 
-qgas = data.q_gas
+# qgas = data.q_gas
+qliq = 0
 
-eos = thermo.water
-M = thermo.M_water
-DOF = thermo.DOF_water
+eos = thermo.H2
+M = thermo.M_H2
+DOF = thermo.DOF_H2
 
 dp = -1.8
 
-# liq = Phase(L_liq, -0, N, eos.LIQPH,
-#             lambda T, p: thermo.calc_cp(T, p, eos.LIQPH, eos),
-#             lambda T, p: thermo.calc_rho(T, p, eos.LIQPH, eos),
-#             lambda T, p, x: thermo.calc_kappa(T, p, eos.LIQPH, x))
-# vap = Phase(0, L_gas, N, eos.VAPPH,
-#             lambda T, p: thermo.calc_cp(T, p, eos.VAPPH, eos),
-#             lambda T, p: thermo.calc_rho(T, p, eos.VAPPH, eos),
-#             lambda T, p, x: thermo.calc_kappa(T, p, eos.VAPPH, x))
-
 liq = Phase(L_liq, -0, N, eos.LIQPH,
-            lambda T, p: k_thermo.cp_liquid(T),
-            lambda T, p: k_thermo.rho_liquid(T),
-            lambda T, p, x: k_thermo.kappa_liquid(T))
+            lambda T, p: thermo.calc_cp(T, p, eos.LIQPH, eos),
+            lambda T, p: thermo.calc_rho(T, p, eos.LIQPH, eos),
+            lambda T, p, x: thermo.calc_kappa(T, p, eos.LIQPH, x))
 vap = Phase(0, L_gas, N, eos.VAPPH,
-            lambda T, p: k_thermo.cp_vapor(T),
-            lambda T, p: k_thermo.rho_vapor(T),
-            lambda T, p, x: k_thermo.kappa_vapor(T))
+            lambda T, p: thermo.calc_cp(T, p, eos.VAPPH, eos),
+            lambda T, p: thermo.calc_rho(T, p, eos.VAPPH, eos),
+            lambda T, p, x: thermo.calc_kappa(T, p, eos.VAPPH, x))
+
+# liq = Phase(L_liq, -0, N, eos.LIQPH,
+#             lambda T, p: k_thermo.cp_liquid(T),
+#             lambda T, p: k_thermo.rho_liquid(T),
+#             lambda T, p, x: k_thermo.kappa_liquid(T))
+# vap = Phase(0, L_gas, N, eos.VAPPH,
+#             lambda T, p: k_thermo.cp_vapor(T),
+#             lambda T, p: k_thermo.rho_vapor(T),
+#             lambda T, p, x: k_thermo.kappa_vapor(T))
 
 liq.set_mdot(mdot)
 vap.set_mdot(mdot)
@@ -113,8 +114,8 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
         liq.T = sol_liq.y[0]
         Tliq = liq.T[-1]
         
-        f1=62.61732063641245
-        f2=360916.2175654273
+        f1=1e3 #62.61732063641245
+        f2=1e6 # 360916.2175654273
         # input()
         # print(Tliq, qgas)
         mdot, Tgas = solve_force_flux(Tliq, qgas, data.dp, eos, DOF, f1=f1, f2=f2, method=method)
@@ -160,21 +161,21 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
     
     if not rauter:
         axins = zoomed_inset_axes(ax, 4, loc=4) # zoom = 6
-        axins.plot(data.T_gas, data.x_gas,
-            marker='>', lw=0, color='C2', zorder=5)
-        axins.plot(data.T_liq, data.x_liq,
-            marker='>', lw=0, color='C2', zorder=6)
+        # axins.plot(data.T_gas, data.x_gas,
+        #     marker='>', lw=0, color='C2', zorder=5)
+        # axins.plot(data.T_liq, data.x_liq,
+        #     marker='>', lw=0, color='C2', zorder=6)
     axins.plot(vap.T - 273.15, vap.x * 1000, f'C{0+3*rauter}', zorder=2)
     axins.plot(liq.T - 273.15, liq.x * 1000, f'C{0+3*rauter}', zorder=3)
 axins.fill_between(np.linspace(5, 17), 0, L_liq*1000, alpha=0.4)
 axins.grid()
 
 
-ax.plot(data.T_gas, data.x_gas,
-         marker='>', lw=0, color='C2', label=data.label)
-ax.plot(data.T_liq, data.x_liq,
-         marker='>', lw=0, color='C2')
-ax.plot(data.T_liq[0], data.x_liq[0], 'ko')
+# ax.plot(data.T_gas, data.x_gas,
+#          marker='>', lw=0, color='C2', label=data.label)
+# ax.plot(data.T_liq, data.x_liq,
+#          marker='>', lw=0, color='C2')
+# ax.plot(data.T_liq[0], data.x_liq[0], 'ko')
 ax.fill_between(np.linspace(min(data.T_liq), max(data.T_gas+list(vap.T - 273.15))), 0, L_liq*1000, alpha=0.4)
 ax.set_xlabel(r'T [$^\circ$C]')
 ax.set_ylabel('x [mm]')

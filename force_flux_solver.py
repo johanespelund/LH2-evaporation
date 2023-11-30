@@ -8,15 +8,18 @@ from scipy.optimize import fsolve
 
 R = thermo.R
 
-def solve_force_flux(Tliq, qvap, p, eos, DOF, f1=1, f2=1, method="KTG"):
+def solve_force_flux(Tliq, qvap, dp, eos, DOF, f1=1, f2=1, method="KTG"):
     M = eos.compmoleweight(1)*1e-3
-    
-    # p_sat = thermo.calc_p_sat(Tliq, eos)
-    # C_eq = thermo.calc_Ceq(Tliq, eos)
-    
     p_sat = k_thermo.psat_liquid(Tliq)
+    p = p_sat + dp
     C_eq = k_thermo.Ceq(Tliq)
-    print(p,p_sat)
+    
+    # Uncomment for other components than water!
+    # print(f"{Tliq=}")
+    # M = eos.compmoleweight(1)*1e-3
+    # p_sat = thermo.calc_p_sat(Tliq, eos)
+    # p = p_sat + dp
+    # C_eq = thermo.calc_Ceq(Tliq, eos)
         
     def func(x):
         J, Tg = x
@@ -29,7 +32,7 @@ def solve_force_flux(Tliq, qvap, p, eos, DOF, f1=1, f2=1, method="KTG"):
         elif method == "KTG":
             r_qq = KGT.R_qq(C_eq, Tliq, R, M)*f1
             r_qmu = KGT.R_qmu(C_eq, Tliq, R, M)*f1
-            r_mumu = KGT.R_mumu(C_eq, Tliq, R, M, Tg, DOF, sigma=0.1)*f2
+            r_mumu = KGT.R_mumu(C_eq, Tliq, R, M, Tg, DOF, sigma=False)*f2
     
         force1, force2 = NET.forces(qvap, J, r_qq, r_mumu, r_qmu)
         r1 = (1/Tg - 1/Tliq) - force1
@@ -51,51 +54,89 @@ if __name__ == "__main__":
     
     import data.jafari as data
     
+    ### water
     eos = thermo.water
     DOF = thermo.DOF_water
-
     Tliq = 273.15 + data.T_liq[0]
-    p = data.p
+    dp = data.dp
     qvap = data.q_gas
-    print(data.mdot)
-    print(data.q_gas)
-    print(data.T_liq[0])
-    # print(thermo.calc_p_sat(Tliq, eos))
-    # qvap = -10.36
-    # dp = -1.8
+    
+    target_mdot = data.mdot
+    target_Tv = 273.15 + data.T_gas[0]
+    
+    ### N2
+    # eos = thermo.N2
+    # DOF = thermo.DOF_N2
+    # Tliq = 77.6
+    # dp = 2
+    # qvap = -10
+    
+    # target_mdot = 13.1e-3
+    # target_Tv = Tliq + 3.2
     
     # Solve func(f1, f2) == 0 to find scaling factors f1 and f2 
     # that makes KTG fit with experiments:
-    def func2(x):
-        f1, f2 = x
-        mdot, Tv = solve_force_flux(Tliq, qvap, p, eos, f1, f2)
-        return np.array([data.mdot - mdot, 273.15 + data.T_gas[0] - Tv])
-    f1, f2 = fsolve(func2, [1, 1])
-    
-    print(f1, f2)
-    input()
-    
-    # f1, f2 = 70, 3e5 # Best values for Jafari et al.
-    # f1, f2 = 1e3, 1e3
-    
-    mdot1, Tvap1= solve_force_flux(Tliq, qvap, p, eos, DOF)
-    print(mdot1, Tvap1-Tliq)
-    mdot2, Tvap2= solve_force_flux(Tliq, qvap, p, eos, DOF, f1, f2)
-    print(mdot2, Tvap2-Tliq)
-    mdot3, Tvap3= solve_force_flux(Tliq, qvap, p, eos, DOF, f1=1, f2=1, method="RAUTER")
-    print(mdot2, Tvap2-Tliq)
-    mdot4, Tvap4 = data.mdot, 273.15 + data.T_gas[0]    # Jafari
-    
-    labels = ["Jafari et al.", "KTG", "KTG (scaled)", "Rauter et al."]
-    colors = ["C3", "C0", "C0", "C0"]
+    if eos == thermo.water:
+        def func2(x):
+            f1, f2 = x
+            mdot, Tv = solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
+            return np.array([target_mdot - mdot, target_Tv  - Tv])
+        f1, f2 = fsolve(func2, [1, 1])
         
-    a[0].bar([1,2,3,4], [mdot4, mdot1, mdot2, mdot3], color=colors, zorder=3)
-    a[1].bar([1, 2, 3, 4], [Tvap4-Tliq, Tvap1-Tliq, Tvap2-Tliq , Tvap3-Tliq],  color=colors, zorder=3)
+        print(f1, f2)
+        
+        # f1, f2 = 70, 3e5 # Best values for Jafari et al.
+        # f1, f2 = 1e3, 1e3
+        
+        mdot1, Tvap1= solve_force_flux(Tliq, qvap, dp, eos, DOF)
+        print(mdot1, Tvap1-Tliq)
+        mdot2, Tvap2= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
+        print(mdot2, Tvap2-Tliq)
+        mdot3, Tvap3= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1=1, f2=1, method="RAUTER")
+        print(mdot3, Tvap3-Tliq)
+        mdot4, Tvap4 = data.mdot, 273.15 + data.T_gas[0]    # Jafari
+        
+        labels = ["Jafari et al.", "KTG", "KTG (scaled)", "Rauter et al."]
+        colors = ["C3", "C0", "C0", "C0"]
+            
+        a[0].bar([1, 2, 3, 4], [mdot4, mdot1, mdot2, mdot3], color=colors, zorder=3)
+        a[1].bar([1, 2, 3, 4], [Tvap4-Tliq, Tvap1-Tliq, Tvap2-Tliq , Tvap3-Tliq],  color=colors, zorder=3)
+        
+        for ax in a:
+            ax.set_xticks([1, 2, 3, 4])
+            ax.set_xticklabels(labels, rotation=45, ha='right')
+            ax.grid(axis='y', zorder=0)
     
-    for ax in a:
-        ax.set_xticks([1, 2, 3, 4])
-        ax.set_xticklabels(labels, rotation=45, ha='right')
-        ax.grid(axis='y', zorder=0)
+    else:
+        
+        # def func2(x):
+        #     f1, f2 = x
+        #     mdot, Tv = solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
+        #     return np.array([target_mdot - mdot, target_Tv  - Tv])
+        # f1, f2 = fsolve(func2, [1, 1])
+        
+        f1, f2 = 1e3, 1e9
+        print(f1, f2)
+        mdot1, Tvap1= solve_force_flux(Tliq, qvap, dp, eos, DOF)
+        print(mdot1, Tvap1-Tliq)
+        mdot2, Tvap2= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
+        print(mdot2, Tvap2-Tliq)
+        mdot3, Tvap3= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1=1, f2=1, method="RAUTER")
+        print(mdot3, Tvap3-Tliq)
+        mdot4, Tvap4 = target_mdot, target_Tv    # Jafari
+        
+        labels = ["KTG", "KTG (scaled)", "Rauter et al."]
+        colors = ["C1", "C0", "C0", "C0"]
+            
+        a[0].bar([1, 2, 3, 4], [mdot4, mdot1, mdot2, mdot3], color=colors, zorder=3)
+        a[1].bar([1, 2, 3, 4], [Tvap4-Tliq, Tvap1-Tliq, Tvap2-Tliq , Tvap3-Tliq],  color=colors, zorder=3)
+        
+        # for ax in a:
+        #     ax.set_xticks([1, 2, 3, 4])
+        #     ax.set_xticklabels(labels, rotation=45, ha='right')
+        #     ax.grid(axis='y', zorder=0)
+        
+        
         
     a[0].set_yscale("log")
     a[0].set_ylabel(r"$\dot{m}$ [kg/s]")
