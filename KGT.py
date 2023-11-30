@@ -65,9 +65,10 @@ def R_qmu(C_eq, Tl, R, M):
     v_mp = np.sqrt((2*R*Tl)/M)     # [m/s]
     return ((np.sqrt(np.pi))/(8 * (C_eq) * Tl * v_mp))*(1 + 16/(5*np.pi))
 
-def R_mumu(C_eq, Tl, R, M, Tg, DOF):
+def R_mumu(C_eq, Tl, R, M, Tg, DOF, sigma=False):
     v_mp = np.sqrt((2*R*Tl)/M)     # [m/s]
-    sigma = sigma_condensation(Tl, Tg, DOF)
+    if not sigma:
+        sigma = sigma_condensation(Tl, Tg, DOF)
     return ((2 * (R)) * np.sqrt(np.pi))/((C_eq) * v_mp) * ((sigma)**(-1) + np.pi**(-1) - 23/32)    
    
     

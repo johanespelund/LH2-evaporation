@@ -1,5 +1,6 @@
 from force_flux_solver import solve_force_flux
 import thermo
+import kazemi_thermo as k_thermo
 from Phase import Phase
 import numpy as np
 from scipy.integrate import solve_bvp
@@ -14,30 +15,60 @@ import scienceplots
 plt.style.use(['science', 'nature'])
 
 # Parameters
-Tgas = 273.15 + data.T[data.i_vap]
-Tliq = 273.15 + data.T[data.i_liq]
-dp = data.dp
-T_inf = 273.15 + data.T[data.i_liq]    # Superheat of bulk liquid, at L_liq
-L_gas = data.x[-1]*1e-3       # Length of the domain
-L_liq = data.x[data.i_liq]*1e-3        # Liquid temperature just below interface
+# Tgas = 273.15 + data.T_gas[0]
+# Tliq = 273.15 + data.T_liq[0]
+# dp = -1.8
+# T_inf = 273.15 + data.T_liq[0]    # Superheat of bulk liquid, at L_liq
+# L_gas = data.x_gas[-1]*1e-3       # Length of the domain
+# L_liq = data.x_liq[-1]*1e-3        # Liquid temperature just below interface
 
 N = 50
-mdot = 0.39e-4  # Mass flow rate (guess)
+# mdot = 0.39e-4  # Mass flow rate (guess)
+# qgas = -10.36  # Heat flux (from experiment)
+# qliq = 500.2  # Heat flux (guess)
+
+# eos = thermo.H2
+# M = thermo.M_H2
+# DOF = thermo.DOF_H2
+
+
+Tgas = 273.15 + data.T_gas[0]
+Tliq = 273.15 + data.T_liq[0]
+p0 = 545
+T_inf = 273.15 + data.T_liq[-1]   # Superheat of bulk liquid, at L_liq
+L_gas = data.x_gas[-1]*1e-3       # Length of the domain
+L_liq = data.x_liq[-1]*1e-3        # Liquid temperature just below interface
+
+mdot = data.mdot  # Mass flow rate (guess)
 qgas = -10.36  # Heat flux (from experiment)
-qliq = 500.2  # Heat flux (guess)
+dTdx_gas = 1e3*np.gradient(data.T_gas, data.x_gas)[0]
+qgas = -k_thermo.kappa_vapor(Tgas)*dTdx_gas
+dTdx_liq = 1e3*np.gradient(data.T_liq, data.x_liq)[0]
+qliq = -k_thermo.kappa_liquid(Tliq)*dTdx_liq
 
 eos = thermo.water
 M = thermo.M_water
 DOF = thermo.DOF_water
 
+dp = -1.8
+
+# liq = Phase(L_liq, -0, N, eos.LIQPH,
+#             lambda T, p: thermo.calc_cp(T, p, eos.LIQPH, eos),
+#             lambda T, p: thermo.calc_rho(T, p, eos.LIQPH, eos),
+#             lambda T, p, x: thermo.calc_kappa(T, p, eos.LIQPH, x))
+# vap = Phase(0, L_gas, N, eos.VAPPH,
+#             lambda T, p: thermo.calc_cp(T, p, eos.VAPPH, eos),
+#             lambda T, p: thermo.calc_rho(T, p, eos.VAPPH, eos),
+#             lambda T, p, x: thermo.calc_kappa(T, p, eos.VAPPH, x))
+
 liq = Phase(L_liq, -0, N, eos.LIQPH,
-            lambda T, p: thermo.calc_cp(T, p, eos.LIQPH, eos),
-            lambda T, p: thermo.calc_rho(T, p, eos.LIQPH, eos),
-            lambda T, p, x: thermo.calc_kappa(T, p, eos.LIQPH, x))
+            lambda T, p: k_thermo.cp_liquid(T),
+            lambda T, p: k_thermo.rho_liquid(T),
+            lambda T, p, x: k_thermo.kappa_liquid(T))
 vap = Phase(0, L_gas, N, eos.VAPPH,
-            lambda T, p: thermo.calc_cp(T, p, eos.VAPPH, eos),
-            lambda T, p: thermo.calc_rho(T, p, eos.VAPPH, eos),
-            lambda T, p, x: thermo.calc_kappa(T, p, eos.VAPPH, x))
+            lambda T, p: k_thermo.cp_vapor(T),
+            lambda T, p: k_thermo.rho_vapor(T),
+            lambda T, p, x: k_thermo.kappa_vapor(T))
 
 liq.set_mdot(mdot)
 vap.set_mdot(mdot)
@@ -51,17 +82,16 @@ i = 0
 for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTER"]):
     mdot0 = 0
     i = 0
-    while np.abs(mdot0 - liq.mdot) > 1e-16:
+    while np.abs(mdot0 - liq.mdot) > 1e-12:
         i += 1
-        p_sat = thermo.calc_p_sat(Tliq, eos)
-        p0 = p_sat + 1.8
 
-        vap.p = p0
-        liq.p = p0
+        vap.p = data.p
+        liq.p = data.p
 
         def dTdx(x, y, phase: Phase):
             # T[0] is temperature, T[1] is its gradient
             T, dTdx = y
+            # print(T)
             kappa = phase.calc_kappa(T, phase.p, x)
             dkdx = np.gradient(kappa, x)
             d2Tdx2 = ((phase.mdot * phase.calc_cp(T, phase.p) - 1*dkdx)*
@@ -73,7 +103,7 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
 
         def bc_liq(ya, yb, phase: Phase):
             kappa_inlet = phase.calc_kappa(Tliq, p0, 0)
-            return np.array([ya[0] - T_inf, yb[1] + kappa_inlet*qliq])
+            return np.array([yb[0] - Tliq, yb[1] + kappa_inlet*qliq])
 
         sol_liq = solve_bvp(lambda x, y: dTdx(x, y, liq),
                             lambda x, y: bc_liq(x, y, liq), liq.x, y0)
@@ -82,14 +112,23 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
         
         f1=71.44
         f2=304308
-        mdot, Tgas = solve_force_flux(Tliq, qgas, dp, eos, DOF, f1=f1, f2=f2, method=method)
+        # input()
+        mdot, Tgas = solve_force_flux(Tliq, qgas, data.p, eos, DOF, f1=f1, f2=f2, method=method)
+        # mdot, Tgas = data.mdot, Tgas 
 
         mdot0 = liq.mdot
         liq.set_mdot(mdot)
         vap.set_mdot(mdot)
 
-        dH_vap = thermo.calc_dHvap(Tliq, Tgas, p0, eos)
-        qliq = qgas + mdot*dH_vap
+        u_gas = mdot/k_thermo.rho_vapor(Tgas, vap.p)
+        u_liq = mdot/k_thermo.rho_liquid(Tgas)
+        print(u_gas, u_liq)
+        dH_vap = k_thermo.dH_vap(Tliq)
+        deltaP = mdot*(u_gas - u_liq)
+        print(deltaP)
+        qliq = qgas + mdot*dH_vap #+ 0.5*(u_liq**2 - u_gas**2)
+        
+        print(k_thermo.psat_liquid(Tliq), data.p)
 
         def bc_gas(ya, yb, phase: Phase):
             kappa_inlet = phase.calc_kappa(Tgas, phase.p, 0)
@@ -124,9 +163,12 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
 # axins.grid()
 
 
-ax.plot(data.T, data.x,
-         marker='>', lw=0, color='C2', label="Jafari et al.")
-ax.fill_between(np.linspace(5, 17), 0, L_liq*1000, alpha=0.4)
+ax.plot(data.T_gas, data.x_gas,
+         marker='>', lw=0, color='C2', label=data.label)
+ax.plot(data.T_liq, data.x_liq,
+         marker='>', lw=0, color='C2')
+ax.plot(data.T_liq[0], data.x_liq[0], 'ko')
+# ax.fill_between(np.linspace(5, 17), 0, L_liq*1000, alpha=0.4)
 ax.set_xlabel(r'T [$^\circ$C]')
 ax.set_ylabel('x [mm]')
 ax.grid()

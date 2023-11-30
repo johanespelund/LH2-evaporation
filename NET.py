@@ -38,31 +38,48 @@ def forces(q_g, J, rqq, rmumu, rqmu):
 
 
 if __name__ == "__main__":
+    import KGT, thermo
+    
     import matplotlib.pyplot as plt
+    # Updating plt.rcParams for the legend
     import scienceplots
     plt.style.use(["science", "nature"])
-    Tl = np.linspace(273, 300)
+    Tl = np.linspace(260, 280)
     
-    rqq = r_qq(Tl)
-    rmuq = r_qmu(Tl)
-    rmumu = r_mumu(Tl)
+    rqq_NET = r_qq(Tl)
+    rmuq_NET = r_qmu(Tl)
+    rmumu_NET = r_mumu(Tl)
+    
+    Ceq = thermo.calc_Ceq(Tl, thermo.water)
+    rqq = KGT.R_qq(Ceq, Tl, thermo.R, thermo.M_water)
+    rmuq = KGT.R_qmu(Ceq, Tl, thermo.R, thermo.M_water)
+    # rmumu = KGT.R_mumu(Ceq, Tl, thermo.R, thermo.M_water, Tl, thermo.DOF_water, sigma=False)
+    rmumu_simga0_1 = KGT.R_mumu(Ceq, Tl, thermo.R, thermo.M_water, Tl, thermo.DOF_water, sigma=0.1)
+    rmumu_simga0_9 = KGT.R_mumu(Ceq, Tl, thermo.R, thermo.M_water, Tl, thermo.DOF_water, sigma=0.9)
 
-    fig, axes = plt.subplots(1, 3)
+    fig, axes = plt.subplots(3, 1, sharex=True)
     a = axes.flatten()
-    a[0].plot(Tl, rqq)
+    c2 = "C3"
+    a[0].plot(Tl, rqq, label="KTG")
+    a[0].plot(Tl, rqq_NET, color=c2)
     a[0].set_ylabel("$R_{qq}^{s,g}$ [m$^2$s/(J$\cdot$K)]")
+    a[0].set_ylim((0.5e-8, 1e-6))
     a[1].plot(Tl, rmuq)
+    a[1].plot(Tl, rmuq_NET, color=c2)
     a[1].set_ylabel("$R_{q\mu}^{s,g}$ [m$^2$s/(mol$\cdot$K)]")
-    a[2].plot(Tl, rmumu)
+    a[2].plot(Tl, rmumu_simga0_1, label="KTG ($\sigma_c = 0.1$)", color="C0")
+    a[2].plot(Tl, rmumu_simga0_9, label="KTG ($\sigma_c = 0.9$)", ls='--', color="C0")
+    a[2].plot(Tl, rmumu_NET, color=c2, label="Rauter et al.")
     a[2].set_ylabel("$R_{\mu\mu}^{s,g}$ [m$^2$s/(mol$^2\cdot$K)]")
+    a[2].set_ylim((1e-2, 1e7))
 
-    
+    a[-1].set_xlabel("T [K]")
     for ax in a:
         ax.grid()
-        ax.set_xlabel("T [K]")
+        ax.set_yscale("log")
     plt.tight_layout()
+    
+    legend = a[2].legend(framealpha=0.0, facecolor='white', edgecolor='black')
+    # legend.get_frame().set_alpha(None)
     plt.show()
-    print(f"{rqq=}")
-    print(f"{rmuq=}")
-    print(f"{rmumu=}")
     
