@@ -56,27 +56,23 @@ if __name__ == "__main__":
     
     ### water
     eos = thermo.water
-    DOF = thermo.DOF_water
-    Tliq = 273.15 + data.T_liq[0]
-    dp = data.dp
-    qvap = data.q_gas
-    
-    target_mdot = data.mdot
-    target_Tv = 273.15 + data.T_gas[0]
     
     ### N2
     # eos = thermo.N2
-    # DOF = thermo.DOF_N2
-    # Tliq = 77.6
-    # dp = 2
-    # qvap = -10
     
-    # target_mdot = 13.1e-3
-    # target_Tv = Tliq + 3.2
     
     # Solve func(f1, f2) == 0 to find scaling factors f1 and f2 
     # that makes KTG fit with experiments:
     if eos == thermo.water:
+        
+        DOF = thermo.DOF_water
+        Tliq = 273.15 + data.T_liq[0]
+        dp = data.dp
+        qvap = data.q_gas
+        
+        target_mdot = data.mdot
+        target_Tv = 273.15 + data.T_gas[0]
+        
         def func2(x):
             f1, f2 = x
             mdot, Tv = solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
@@ -107,7 +103,14 @@ if __name__ == "__main__":
             ax.set_xticklabels(labels, rotation=45, ha='right')
             ax.grid(axis='y', zorder=0)
     
-    else:
+    elif eos == thermo.N2:
+        DOF = thermo.DOF_N2
+        Tliq = 77.6
+        dp = 2
+        qvap = -10
+        
+        # target_mdot = 13.1e-3
+        # target_Tv = Tliq + 3.2
         
         # def func2(x):
         #     f1, f2 = x
@@ -122,14 +125,14 @@ if __name__ == "__main__":
         mdot2, Tvap2= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1, f2)
         print(mdot2, Tvap2-Tliq)
         mdot3, Tvap3= solve_force_flux(Tliq, qvap, dp, eos, DOF, f1=1, f2=1, method="RAUTER")
-        print(mdot3, Tvap3-Tliq)
-        mdot4, Tvap4 = target_mdot, target_Tv    # Jafari
+        # print(mdot3, Tvap3-Tliq)
+        # mdot4, Tvap4 = target_mdot, target_Tv    # Jafari
         
-        labels = ["KTG", "KTG (scaled)", "Rauter et al."]
-        colors = ["C1", "C0", "C0", "C0"]
+        labels = ["KTG (scaled)", "Rauter et al."]
+        colors = ["C0", "C0", "C0"]
             
-        a[0].bar([1, 2, 3, 4], [mdot4, mdot1, mdot2, mdot3], color=colors, zorder=3)
-        a[1].bar([1, 2, 3, 4], [Tvap4-Tliq, Tvap1-Tliq, Tvap2-Tliq , Tvap3-Tliq],  color=colors, zorder=3)
+        a[0].bar([1, 2, 3], [mdot1, mdot2, mdot3], color=colors, zorder=3)
+        a[1].bar([1, 2, 3], [Tliq, Tvap1-Tliq, Tvap2-Tliq , Tvap3-Tliq],  color=colors, zorder=3)
         
         # for ax in a:
         #     ax.set_xticks([1, 2, 3, 4])
