@@ -1,34 +1,54 @@
 from thermopack.cpa import cpa
+from thermopack.cubic import cubic
 from thermopack.saftvrqmie import saftvrqmie
 import numpy as np
 from collections.abc import Iterable
+from thermopack.quantum_cubic import qcubic
 
 R = 8.314
 
 water = cpa('H2O', 'srk')
-H2 = saftvrqmie('H2')
+water.set_tmin(temp=200)
+# H2 = saftvrqmie('H2')
+H2 = qcubic('H2')
+# H2 = cubic("H2", "PR")
+H2.set_tmin(temp=2.0)
+# print(H2.bubble_temperature(1e5,[1]))
+# vg,  = H2.specific_volume(20.483,1e5,[1], H2.VAPPH)
 N2 = saftvrqmie('N2')
+C8 = saftvrqmie('NC8')
+
+# print(H2.bubble_temperature(1e5,[1]))
 
 M_water = water.compmoleweight(1) * 1e-3  # [kg/mol]
 M_H2 = H2.compmoleweight(1) * 1e-3  # [kg/mol]
 M_N2 = N2.compmoleweight(1) * 1e-3  # [kg/mol]
+M_C8 = C8.compmoleweight(1) * 1e-3  # [kg/mol]
 
 DOF_water = 3
 DOF_H2 = 5
 DOF_N2 = 5
+DOF_C8 = 30 #ish
+
+Tc_water = 647
+Tc_N2 = 126.2
+Tc_H2 = 33.18
+
 
 
 def calc_cp(T, p, phase_flag, eos):
+    M = eos.compmoleweight(1) * 1e-3  # [kg/mol]
     if isinstance(T, Iterable):
         cp = np.array([calc_cp(T_val, p, phase_flag, eos)
                        for T_val in T])
         return cp
     else:
         _, Cp_liq = eos.enthalpy(T, p, [1], phase_flag, dhdt=True)
-        return Cp_liq/M_water
+        return Cp_liq/M
 
 
 def calc_rho(T, p, phase_flag, eos):
+    M = eos.compmoleweight(1) * 1e-3  # [kg/mol]
     if isinstance(T, Iterable):
         rho = np.array([calc_rho(T_val, p, phase_flag, eos)
                         for T_val in T])
@@ -36,7 +56,7 @@ def calc_rho(T, p, phase_flag, eos):
     else:
         specific_volume, = eos.specific_volume(
                 T, p, [1], phase_flag)  # [m^3/mol]
-        return M_water/specific_volume
+        return M/specific_volume
 
 def calc_kappa(T, p, phase_flag, x):
     kappa_vap = 0.017
@@ -72,7 +92,8 @@ def calc_p_sat(T, eos):
 
 
 def calc_T_sat(p, eos):
-    T_sat, _ = water.bubble_temperature(p, [1])
+    # T, _ = eos.get_envelope_twophase(p, [1])
+    T_sat, _ = eos.bubble_temperature(p, [1])
     return T_sat
 
 

@@ -2,6 +2,7 @@ import numpy as np
 
 p = 882
 dp = -1.8      # p - p_sat
+p_by_psat = p/(p - dp)
 mdot = 0.39e-4 # average: 2.45e-4
 label = "Jafari et al."
 

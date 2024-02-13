@@ -106,15 +106,15 @@ for label, method in zip(["KTG (fitted scale)", "Rauter et al."], ["KTG", "RAUTE
         def bc_liq(ya, yb, phase: Phase):
             kappa_inlet = phase.calc_kappa(Tliq, p0, 0)
             # return np.array([yb[0] - Tliq, yb[1] + kappa_inlet*qliq])
-            return np.array([ya[0] - T_inf, yb[1] + kappa_inlet*qliq]) # Fix temp at bottom
+            return np.array([yb[0] - Tliq, yb[1] + kappa_inlet*qliq]) # Fix temp at bottom
 
         sol_liq = solve_bvp(lambda x, y: dTdx(x, y, liq),
                             lambda x, y: bc_liq(x, y, liq), liq.x, y0)
         liq.T = sol_liq.y[0]
         Tliq = liq.T[-1]
         
-        f1=62.61732063641245
-        f2=360916.2175654273
+        f1=88.65796972490978 
+        f2=162.40542679131244
         # input()
         # print(Tliq, qgas)
         mdot, Tgas = solve_force_flux(Tliq, qgas, data.dp, eos, DOF, f1=f1, f2=f2, method=method)

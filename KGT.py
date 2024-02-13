@@ -1,5 +1,6 @@
 import numpy as np
 from thermo import R
+import thermo
 
 def sigma_evaporation(p_sat, T_l, T_g, p_g, DOF):
     """
@@ -31,12 +32,14 @@ def sigma_condensation(T_l, T_g, DOF):
     Returns:
     float: Condensation coefficient sigma_c*
     """
+    # print(T_g, T_l)
+    # exit()
     return (np.sqrt(T_g / T_l) *
             np.exp(-(DOF + 4) * (1 - (T_g / T_l))) *
             ((T_g / T_l) ** (DOF + 4)))
 
 
-def mass_flux_HKS(sigma_c, T_l, T_g, p_sat, p_g, M):
+def mass_flux_HKS(sigma_c, T_l, T_g, dp, eos):
     """
     Calculate the mass flux using the Hertz-Knudsen-Schrage equation.
 
@@ -50,10 +53,12 @@ def mass_flux_HKS(sigma_c, T_l, T_g, p_sat, p_g, M):
     Returns:
     float: Mass flux (kg/(m^2·s))
     """
+    M = eos.compmoleweight(1)*1e-3
+    p_sat = thermo.calc_p_sat(T_l, eos)
     return (
         ((2 * sigma_c) / (2 - sigma_c)) *
         np.sqrt(M / (2 * np.pi * R)) *
-        (p_sat / np.sqrt(T_l) - p_g / np.sqrt(T_g))
+        ((p_sat / np.sqrt(T_l)) - ((p_sat + dp) / np.sqrt(T_g)))
         )
     
 
@@ -73,15 +78,22 @@ def R_mumu(C_eq, Tl, R, M, Tg, DOF, sigma=False):
    
     
 if __name__ == "__main__":
-    from thermo import M_water, DOF_water
+    from thermo import M_H2, DOF_H2
+    import thermo
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import scienceplots
+    plt.style.use(["science", "nature"])
 
+    eos = thermo.H2
+    DOF = thermo.DOF_H2
+    M = thermo.M_H2
+    
     # Example usage for water at following state
-    temp_l = 273.15 + 5.2  # Liquid temperature (K)
-    temp_g = 273.15 + 5.6  # Gas temperature (K)
-    p_sat = 883.8  # Saturation pressure (Pa)
-    p_g = 882  # Gas pressure (Pa)
-    DOF = DOF_water
-    M = M_water
+    temp_l = eos.bubble_temperature(1e5, [1])[0] # Liquid temperature (K)
+    temp_g = temp_l + 0.05 #273.15 + 5.6  # Gas temperature (K)
+    p_sat = thermo.calc_p_sat(temp_l, eos) #883.8  # Saturation pressure (Pa)
+    p_g = p_sat - 5 #0.999*p_sat # 882  # Gas pressure (Pa)
 
     # Calculate sigma_evaporation
     sigma_e = sigma_evaporation(p_sat, temp_l, temp_g, p_g, DOF)
@@ -89,8 +101,27 @@ if __name__ == "__main__":
     # Calculate sigma_condensation
     sigma_c = sigma_condensation(temp_l, temp_g, DOF)
     
-    j_hks = mass_flux_HKS(sigma_c, temp_l, temp_g, p_sat, p_g, M)
+    # j_hks = mass_flux_HKS(sigma_c, temp_l, temp_g, p_sat, p_g, M)
+    
+    dT = np.linspace(0,1)
+    dp = np.linspace(0,-1)
+    # j = mass_flux_HKS(1, temp_l, temp_l+0., dp, thermo.H2)
+    # plt.plot(dp,j)
+    # plt.show()
+    
+    DT, DP = np.meshgrid(dT,dp)
+    # print(p_sat)
+    J = mass_flux_HKS(1, temp_l, temp_l+DT, DP, eos) #np.array(DT.shape)
+    print(J)
+    # exit()
+    c1 = plt.contour(DP,DT,J, colors=('C0'), levels=10)
+    plt.clabel(c1, colors=('C0'))
+    # plt.colorbar(c1)
+    plt.xlabel("$p - p_{sat}$")
+    plt.ylabel("$T^g - T^\ell$")
+    plt.tight_layout()
+    plt.show()
 
     print(f"Sigma Evaporation: {sigma_e: .4f}")
     print(f"Sigma Condensation: {sigma_c: .4f}") 
-    print(f"Mass flux, J_HKS: {j_hks: .2e} kg/(m^2*s)")
+    # print(f"Mass flux, J_HKS: {j_hks: .2e} kg/(m^2*s)")
